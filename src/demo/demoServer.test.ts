@@ -36,6 +36,9 @@ describe('demo GREEN-API', () => {
     const info = await client.getContactInfo(chatId)
     expect(info.name).not.toBe('')
     expect(info.avatar).toBe('')
+
+    const other = await client.checkAccount('375291234567')
+    expect((await client.getContactInfo(other.chatId)).name).not.toBe(info.name)
   })
 
   it('delivers, reads and replies to a sent message', async () => {

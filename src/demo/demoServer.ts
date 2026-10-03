@@ -163,7 +163,8 @@ export function createDemoFetch(options: DemoOptions = {}): FetchLike {
       case 'checkAccount': {
         const phone = String(body.phoneNumber ?? '')
         const chatId = demoChatId(phone)
-        if (!contacts.has(chatId)) contacts.set(chatId, { phone, name: DEMO_NAMES[hash(phone) % DEMO_NAMES.length]! })
+        // Имена раздаются по порядку, чтобы у разных собеседников они не совпадали.
+        if (!contacts.has(chatId)) contacts.set(chatId, { phone, name: DEMO_NAMES[contacts.size % DEMO_NAMES.length]! })
         return json({ exist: true, chatId, fromCache: false })
       }
 
