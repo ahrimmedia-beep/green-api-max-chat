@@ -121,6 +121,34 @@ describe('createGreenApiClient', () => {
     expect(describeError(error)).toMatch(/не авторизован/)
   })
 
+  it('getContactInfo posts chatId and returns name, contact name and avatar', async () => {
+    const fetch = mockFetch(
+      jsonResponse({
+        avatar: 'https://i.oneme.ru/i?r=abc',
+        name: 'Ходабрыш Пробешёлов',
+        contactName: 'Ходабрыш',
+        chatId: '10000000',
+        chatType: 'user',
+        lastSeen: 1754632014,
+        phoneNumber: 79876543210,
+      }),
+      jsonResponse({ chatId: '10000001' }),
+    )
+    const client = createGreenApiClient(credentials, { fetch })
+
+    await expect(client.getContactInfo('10000000')).resolves.toEqual({
+      name: 'Ходабрыш Пробешёлов',
+      contactName: 'Ходабрыш',
+      avatar: 'https://i.oneme.ru/i?r=abc',
+    })
+    const { url, init } = lastCall(fetch)
+    expect(url).toBe(`${BASE}/getContactInfo/token-abc`)
+    expect(init.method).toBe('POST')
+    expect(JSON.parse(String(init.body))).toEqual({ chatId: '10000000' })
+
+    await expect(client.getContactInfo('10000001')).resolves.toEqual({ name: '', contactName: '', avatar: '' })
+  })
+
   it('receiveNotification passes receiveTimeout and returns the notification', async () => {
     const body = { typeWebhook: 'incomingMessageReceived' }
     const fetch = mockFetch(jsonResponse({ receiptId: 7, body }))

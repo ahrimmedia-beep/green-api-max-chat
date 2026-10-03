@@ -31,6 +31,15 @@ export interface SendMessageResponse {
   idMessage: string
 }
 
+export interface ContactInfo {
+  /** Имя из профиля MAX; пустая строка, если аккаунта нет. */
+  name: string
+  /** Имя из контактной книги телефона инстанса; пустая строка, если номера там нет. */
+  contactName: string
+  /** Ссылка на аватар; пустая строка, если его нет или он скрыт настройками приватности. */
+  avatar: string
+}
+
 export interface ReceivedNotification {
   receiptId: number
   body: unknown
@@ -40,6 +49,8 @@ export interface GreenApiClient {
   getStateInstance(signal?: AbortSignal): Promise<StateInstanceResponse>
   checkAccount(phoneNumber: string, signal?: AbortSignal): Promise<CheckAccountResponse>
   sendMessage(chatId: string, message: string, signal?: AbortSignal): Promise<SendMessageResponse>
+  /** Имя и аватар собеседника. Только для личных чатов. */
+  getContactInfo(chatId: string, signal?: AbortSignal): Promise<ContactInfo>
   /** Возвращает null, если за receiveTimeout секунд уведомлений не было. */
   receiveNotification(receiveTimeout: number, signal?: AbortSignal): Promise<ReceivedNotification | null>
   deleteNotification(receiptId: number, signal?: AbortSignal): Promise<boolean>
@@ -210,6 +221,13 @@ export function createGreenApiClient(credentials: Credentials, options: ClientOp
         throw new GreenApiError('response', 200, 'sendMessage: idMessage is missing')
       }
       return { idMessage: data.idMessage }
+    },
+
+    async getContactInfo(chatId, signal) {
+      const data = await request('POST', url('getContactInfo'), { body: { chatId }, signal })
+      if (!isRecord(data)) throw new GreenApiError('response', 200, 'getContactInfo: empty response')
+      const text = (value: unknown) => (typeof value === 'string' ? value : '')
+      return { name: text(data.name), contactName: text(data.contactName), avatar: text(data.avatar) }
     },
 
     async receiveNotification(receiveTimeout, signal) {

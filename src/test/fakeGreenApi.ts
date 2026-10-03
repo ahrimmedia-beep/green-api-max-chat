@@ -21,6 +21,8 @@ export class FakeGreenApi implements GreenApiClient {
 
   sendMessage = vi.fn<GreenApiClient['sendMessage']>(async () => ({ idMessage: `msg-${this.nextMessageId++}` }))
 
+  getContactInfo = vi.fn<GreenApiClient['getContactInfo']>(async () => ({ name: '', contactName: '', avatar: '' }))
+
   receiveNotification = vi.fn<GreenApiClient['receiveNotification']>(async (_timeout, signal) => {
     const error = this.receiveErrors.shift()
     if (error !== undefined) throw error

@@ -41,12 +41,30 @@
 | [GetStateInstance](https://green-api.com/v3/docs/api/account/GetStateInstance/) | GET | `/waInstance{id}/getStateInstance/{token}` | нет | `{ "stateInstance": "authorized" }`, также `notAuthorized`, `blocked`, `starting`, `suspended`, `pendingPassword` |
 | [CheckAccount](https://green-api.com/v3/docs/api/service/CheckAccount/) | POST | `/waInstance{id}/checkAccount/{token}` | `{ "phoneNumber": 79991234567 }` (число, 11 или 12 цифр, коды 7 и 375) | `{ "exist": true, "chatId": "10000000", "fromCache": true }`; при неавторизованном инстансе `{ "status": false, "reason": "..." }` |
 | [SendMessage](https://green-api.com/v3/docs/api/sending/SendMessage/) | POST | `/waInstance{id}/sendMessage/{token}` | `{ "chatId": "10000000", "message": "текст" }`, до 4000 символов | `{ "idMessage": "1763115112345" }` |
+| [GetContactInfo](https://green-api.com/v3/docs/api/service/GetContactInfo/) | POST | `/waInstance{id}/getContactInfo/{token}` | `{ "chatId": "10000000" }`, только личные чаты | `{ "avatar": "https://i.oneme.ru/...", "name": "...", "contactName": "...", "chatId": "10000000", "chatType": "user", "lastSeen": 1754632014, "phoneNumber": 79876543210 }` |
 | [ReceiveNotification](https://green-api.com/v3/docs/api/receiving/technology-http-api/ReceiveNotification/) | GET | `/waInstance{id}/receiveNotification/{token}?receiveTimeout=N` | `receiveTimeout` от 5 до 60 с, по умолчанию 5 | `{ "receiptId": 1234567, "body": { ... } }` или `null`, если за таймаут ничего не пришло |
 | [DeleteNotification](https://green-api.com/v3/docs/api/receiving/technology-http-api/DeleteNotification/) | DELETE | `/waInstance{id}/deleteNotification/{token}/{receiptId}` | нет | `{ "result": true, "reason": "" }` |
 
 Лимиты запросов в секунду на инстанс ([ограничения](https://green-api.com/v3/docs/api/ratelimiter/)):
-GetStateInstance 1, SendMessage 50, ReceiveNotification 100, DeleteNotification 100, CheckAccount 10.
+GetStateInstance 1, SendMessage 50, ReceiveNotification 100, DeleteNotification 100, CheckAccount 10, GetContactInfo 10.
 На тарифе «Разработчик» действует ограничение на число чатов и проверок номеров (страница [MAX](https://green-api.com/max)).
+
+## Имена и аватары собеседников
+
+Для MAX в v3 есть три сервисных метода ([обзор](https://green-api.com/v3/docs/api/service/)):
+
+- [GetContactInfo](https://green-api.com/v3/docs/api/service/GetContactInfo/) возвращает за один запрос и имя, и аватар:
+  `name` (имя из профиля MAX, пусто, если аккаунта нет), `contactName` (имя из контактной книги телефона, пусто, если номера там нет),
+  `avatar` (ссылка). Для групп не работает: `400 ... does not support group chats, to work with groups, use the GetGroupData method`.
+- [GetAvatar](https://green-api.com/v3/docs/api/service/GetAvatar/): `POST` с `{ "chatId" }`, ответ `{ "urlAvatar": "..." }`;
+  пустая строка, если аватара нет или он закрыт настройками приватности. Работает и для групп.
+- [GetContacts](https://green-api.com/v3/docs/api/service/GetContacts/): список контактов, лимит 1 запрос в секунду.
+
+Приложение использует только GetContactInfo: одного запроса хватает на имя и аватар.
+Запрос отправляется один раз на chatId, когда чат создан по номеру или пришло сообщение от нового собеседника.
+Имя выбирается так: `contactName`, затем `name`, затем имя из входящего уведомления (`senderData.senderContactName`,
+`senderName`, `chatName`), затем номер, затем chatId. Ошибка запроса на переписку не влияет: остаются запасные варианты.
+Картинка аватара грузится с `i.oneme.ru` обычным `<img>` без CORS; если она не загрузилась, показываются инициалы.
 
 ## Получение через HTTP API
 
@@ -114,3 +132,5 @@ GetStateInstance 1, SendMessage 50, ReceiveNotification 100, DeleteNotification 
 - Формат `apiUrl` в консоли для MAX-инстанса (с `/v3` на конце или без) и совпадение с подстановкой по `idInstance`.
 - Что `senderData.chatId` во входящем сообщении совпадает с `chatId` из `CheckAccount` для того же номера.
 - Как MAX-инстанс отвечает `ReceiveNotification` при пустой очереди: ожидается `null` с кодом 200.
+- Что `GetContactInfo` работает на тарифе «Разработчик» и не расходует лимит проверок номеров,
+  а ссылка на аватар открывается в браузере с чужого домена.
