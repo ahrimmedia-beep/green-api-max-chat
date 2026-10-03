@@ -5,22 +5,23 @@
   --color-chat-bg: #e9edf3;
   --color-border: #e3e6ec;
   --color-text: #1a1d23;
-  --color-text-secondary: #7b8290;
-  --color-accent: #3e6bff;
-  --color-accent-hover: #2f58e6;
+  --color-text-secondary: #656c79;
+  --color-accent: #2f5ce6;
+  --color-accent-hover: #2449c4;
+  --color-accent-text: var(--color-accent);
   --color-accent-soft: #e8eeff;
   --color-accent-soft-hover: #dbe4ff;
   --color-warning-soft: #fff1dc;
   --color-warning-text: #9a5b00;
   --color-bubble-in: #ffffff;
   --color-bubble-out: #d8e4ff;
-  --color-danger: #e5484d;
+  --color-danger: #d33a3f;
   --color-success: #2fb36a;
   --color-warning: #f2a33a;
   --color-on-accent: #ffffff;
   --color-danger-soft: #fdecec;
-  --color-status-read: var(--color-accent);
-  --color-meta-out: var(--color-text-secondary);
+  --color-status-read: var(--color-accent-text);
+  --color-meta-out: #5d6472;
   --color-chat-pattern: rgb(62 107 255 / 7%);
   --color-pill: rgb(255 255 255 / 80%);
   --shadow-card: 0 12px 40px rgb(23 32 64 / 10%);
@@ -46,8 +47,9 @@
     --color-border: #2b2f36;
     --color-text: #e8ebf0;
     --color-text-secondary: #8f97a5;
-    --color-accent: #5b82ff;
-    --color-accent-hover: #7393ff;
+    --color-accent: #3f68ea;
+    --color-accent-hover: #4f76f2;
+    --color-accent-text: #8aa5ff;
     --color-accent-soft: #222d4d;
     --color-accent-soft-hover: #2a385f;
     --color-warning-soft: #3a2b12;
@@ -179,7 +181,7 @@ button:disabled {
 }
 
 .button--secondary {
-  color: var(--color-accent);
+  color: var(--color-accent-text);
   background: var(--color-accent-soft);
 }
 
@@ -232,7 +234,7 @@ button:disabled {
 }
 
 .login__hint a {
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 .login__error {

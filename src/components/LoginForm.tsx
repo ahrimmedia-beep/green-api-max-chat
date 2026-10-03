@@ -85,7 +85,7 @@ export function LoginForm({ onLogin, onDemo }: LoginFormProps) {
     ) : null
 
   return (
-    <div className="login">
+    <main className="login">
       <form className="login__card" onSubmit={handleSubmit} noValidate aria-labelledby={`${id}-title`}>
         <div className="login__brand" aria-hidden="true">
           <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" width="48" height="48" />
@@ -187,6 +187,6 @@ export function LoginForm({ onLogin, onDemo }: LoginFormProps) {
           </div>
         )}
       </form>
-    </div>
+    </main>
   )
 }
