@@ -1,4 +1,4 @@
-/* Светлая тема по мотивам web.max.ru */
+/* Тема по мотивам web.max.ru: светлая по умолчанию, тёмная по системной настройке (prefers-color-scheme) */
 :root {
   --color-bg: #ffffff;
   --color-surface: #f4f5f8;
@@ -17,9 +17,16 @@
   --color-danger: #e5484d;
   --color-success: #2fb36a;
   --color-warning: #f2a33a;
+  --color-on-accent: #ffffff;
+  --color-danger-soft: #fdecec;
+  --color-status-read: var(--color-accent);
+  --color-meta-out: var(--color-text-secondary);
+  --color-chat-pattern: rgb(62 107 255 / 7%);
+  --color-pill: rgb(255 255 255 / 80%);
+  --shadow-card: 0 12px 40px rgb(23 32 64 / 10%);
+  --shadow-bubble: 0 1px 1px rgb(23 32 64 / 6%);
   --radius-bubble: 18px;
   --sidebar-width: 360px;
-  --shadow-card: 0 12px 40px rgb(23 32 64 / 10%);
   --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 
   color-scheme: light;
@@ -29,6 +36,37 @@
   color: var(--color-text);
   background: var(--color-bg);
   -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #17191d;
+    --color-surface: #23262c;
+    --color-chat-bg: #0f1114;
+    --color-border: #2b2f36;
+    --color-text: #e8ebf0;
+    --color-text-secondary: #8f97a5;
+    --color-accent: #5b82ff;
+    --color-accent-hover: #7393ff;
+    --color-accent-soft: #222d4d;
+    --color-accent-soft-hover: #2a385f;
+    --color-warning-soft: #3a2b12;
+    --color-warning-text: #f5c27a;
+    --color-bubble-in: #23262c;
+    --color-bubble-out: #2a3f78;
+    --color-danger: #ff6b70;
+    --color-success: #3fcf7e;
+    --color-on-accent: #ffffff;
+    --color-danger-soft: #3b1d20;
+    --color-status-read: #9db6ff;
+    --color-meta-out: #b3c0e3;
+    --color-chat-pattern: rgb(120 150 255 / 6%);
+    --color-pill: rgb(35 38 44 / 85%);
+    --shadow-card: 0 12px 40px rgb(0 0 0 / 45%);
+    --shadow-bubble: 0 1px 1px rgb(0 0 0 / 25%);
+
+    color-scheme: dark;
+  }
 }
 
 *,
@@ -94,7 +132,7 @@ button:disabled {
 }
 
 .button--primary {
-  color: #fff;
+  color: var(--color-on-accent);
   background: var(--color-accent);
 }
 
@@ -127,12 +165,12 @@ button:disabled {
 }
 
 .icon-button--accent {
-  color: #fff;
+  color: var(--color-on-accent);
   background: var(--color-accent);
 }
 
 .icon-button--accent:hover:not(:disabled) {
-  color: #fff;
+  color: var(--color-on-accent);
   background: var(--color-accent-hover);
 }
 
@@ -201,7 +239,7 @@ button:disabled {
   margin: 0;
   padding: 10px 12px;
   color: var(--color-danger);
-  background: #fdecec;
+  background: var(--color-danger-soft);
   border-radius: 10px;
 }
 
@@ -482,7 +520,7 @@ button:disabled {
   font-size: 12px;
   font-weight: 600;
   line-height: 20px;
-  color: #fff;
+  color: var(--color-on-accent);
   text-align: center;
   background: var(--color-accent);
   border-radius: 10px;
@@ -495,7 +533,7 @@ button:disabled {
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  color: #fff;
+  color: var(--color-on-accent);
   border-radius: 50%;
 }
 
@@ -564,7 +602,7 @@ button:disabled {
   min-width: 0;
   min-height: 0;
   background-color: var(--color-chat-bg);
-  background-image: radial-gradient(rgb(62 107 255 / 7%) 1px, transparent 1px);
+  background-image: radial-gradient(var(--color-chat-pattern) 1px, transparent 1px);
   background-size: 18px 18px;
 }
 
@@ -581,7 +619,7 @@ button:disabled {
   padding: 6px 14px;
   margin: 0 0 12px;
   color: var(--color-text);
-  background: rgb(255 255 255 / 80%);
+  background: var(--color-pill);
   border-radius: 14px;
 }
 
@@ -641,7 +679,7 @@ button:disabled {
   margin: 20vh auto 0;
   color: var(--color-text-secondary);
   text-align: center;
-  background: rgb(255 255 255 / 80%);
+  background: var(--color-pill);
   border-radius: 14px;
 }
 
@@ -676,7 +714,7 @@ button:disabled {
   position: relative;
   padding: 7px 12px 6px;
   border-radius: var(--radius-bubble);
-  box-shadow: 0 1px 1px rgb(23 32 64 / 6%);
+  box-shadow: var(--shadow-bubble);
 }
 
 .message--incoming .message__bubble {
@@ -711,8 +749,12 @@ button:disabled {
   display: inline-flex;
 }
 
+.message--outgoing .message__meta {
+  color: var(--color-meta-out);
+}
+
 .message__status--read {
-  color: var(--color-accent);
+  color: var(--color-status-read);
 }
 
 .message__status--failed {
@@ -762,7 +804,7 @@ button:disabled {
   width: 42px;
   height: 42px;
   padding: 0;
-  color: #fff;
+  color: var(--color-on-accent);
   background: var(--color-accent);
   border: 0;
   border-radius: 50%;
