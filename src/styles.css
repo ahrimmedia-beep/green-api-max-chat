@@ -475,6 +475,11 @@ button:disabled {
   border-radius: 50%;
 }
 
+.connection--standby .connection__dot {
+  background: var(--color-text-secondary);
+  opacity: 0.5;
+}
+
 .connection--listening .connection__dot {
   background: var(--color-success);
 }

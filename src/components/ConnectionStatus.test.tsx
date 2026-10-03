@@ -4,6 +4,7 @@ import { ConnectionStatus } from './ConnectionStatus'
 
 describe('ConnectionStatus', () => {
   it.each([
+    [{ state: 'standby' } as const, 'Сообщения получает другая вкладка'],
     [{ state: 'connecting' } as const, 'Подключение…'],
     [{ state: 'listening' } as const, 'Получение сообщений включено'],
     [

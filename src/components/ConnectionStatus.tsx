@@ -2,6 +2,8 @@ import type { PollingStatus } from '../api/polling'
 
 function describe(status: PollingStatus): string {
   switch (status.state) {
+    case 'standby':
+      return 'Сообщения получает другая вкладка. Эта подключится, когда ту закроют.'
     case 'connecting':
       return 'Подключение…'
     case 'listening':

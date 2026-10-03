@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { GreenApiError } from '../api/greenApi'
 import type { NotificationEvent } from '../api/notifications'
 import { FakeGreenApi } from '../test/fakeGreenApi'
+import { FakeLockManager } from '../test/fakeLockManager'
 import { incomingText, stateInstanceChanged } from '../test/fixtures'
 import { useNotificationPolling } from './useNotificationPolling'
 
@@ -54,6 +55,56 @@ describe('useNotificationPolling', () => {
     expect(firstHandler).not.toHaveBeenCalled()
     expect(api.receiveNotification.mock.calls.length).toBeLessThanOrEqual(2)
     unmount()
+  })
+
+  describe('single receiving tab (Web Locks)', () => {
+    it('lets only the lock holder poll; the other tab waits and takes over', async () => {
+      const locks = new FakeLockManager()
+      const firstTab = new FakeGreenApi()
+      const secondTab = new FakeGreenApi()
+      const options = { lockName: 'instance-1', locks }
+
+      const first = renderHook(() => useNotificationPolling(firstTab, () => {}, options))
+      await waitFor(() => expect(firstTab.receiveNotification).toHaveBeenCalled())
+
+      const second = renderHook(() => useNotificationPolling(secondTab, () => {}, options))
+      await waitFor(() => expect(second.result.current).toEqual({ state: 'standby' }))
+      expect(secondTab.receiveNotification).not.toHaveBeenCalled()
+
+      first.unmount()
+      await waitFor(() => expect(secondTab.receiveNotification).toHaveBeenCalled())
+      expect(second.result.current.state).not.toBe('standby')
+      second.unmount()
+      await waitFor(() => expect(locks.isHeld('instance-1')).toBe(false))
+    })
+
+    it('uses separate locks for different instances', async () => {
+      const locks = new FakeLockManager()
+      const a = new FakeGreenApi()
+      const b = new FakeGreenApi()
+      const first = renderHook(() => useNotificationPolling(a, () => {}, { lockName: 'instance-1', locks }))
+      const second = renderHook(() => useNotificationPolling(b, () => {}, { lockName: 'instance-2', locks }))
+
+      await waitFor(() => expect(a.receiveNotification).toHaveBeenCalled())
+      await waitFor(() => expect(b.receiveNotification).toHaveBeenCalled())
+      first.unmount()
+      second.unmount()
+    })
+
+    it('polls without a lock when Web Locks is unavailable', async () => {
+      const api = new FakeGreenApi()
+      const { unmount } = renderHook(() => useNotificationPolling(api, () => {}, { lockName: 'instance-1', locks: null }))
+      await waitFor(() => expect(api.receiveNotification).toHaveBeenCalled())
+      unmount()
+    })
+
+    it('falls back to polling when the lock request fails', async () => {
+      const api = new FakeGreenApi()
+      const locks = { request: vi.fn(() => Promise.reject(new DOMException('denied', 'SecurityError'))) }
+      const { unmount } = renderHook(() => useNotificationPolling(api, () => {}, { lockName: 'instance-1', locks }))
+      await waitFor(() => expect(api.receiveNotification).toHaveBeenCalled())
+      unmount()
+    })
   })
 
   it('reports a stopped state on auth errors', async () => {

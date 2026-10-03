@@ -4,6 +4,7 @@ import type { ContactInfo, Credentials, GreenApiClient } from '../api/greenApi'
 import type { NotificationEvent } from '../api/notifications'
 import { useContactInfo } from '../hooks/useContactInfo'
 import { useNotificationPolling } from '../hooks/useNotificationPolling'
+import { receiveLockName } from '../lib/instanceLock'
 import { chatReducer, findChatByPhone, initialChatState, sortChats } from '../state/chatReducer'
 import { ChatList } from './ChatList'
 import { ChatWindow } from './ChatWindow'
@@ -26,7 +27,9 @@ export function ChatScreen({ credentials, client, onLogout }: ChatScreenProps) {
     else if (event.type === 'outgoingStatus') dispatch({ type: 'statusReceived', event })
   }, [])
 
-  const pollingStatus = useNotificationPolling(client, handleNotification)
+  const pollingStatus = useNotificationPolling(client, handleNotification, {
+    lockName: receiveLockName(credentials.idInstance),
+  })
 
   const handleContactInfo = useCallback((chatId: string, info: ContactInfo) => {
     dispatch({ type: 'contactInfoReceived', chatId, name: info.contactName || info.name, avatarUrl: info.avatar })

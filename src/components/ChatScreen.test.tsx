@@ -2,7 +2,9 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { GreenApiError } from '../api/greenApi'
+import { receiveLockName } from '../lib/instanceLock'
 import { FakeGreenApi } from '../test/fakeGreenApi'
+import { FakeLockManager } from '../test/fakeLockManager'
 import { incomingText, outgoingStatus, stateInstanceChanged } from '../test/fixtures'
 import { ChatScreen } from './ChatScreen'
 
@@ -203,6 +205,26 @@ describe('ChatScreen', () => {
       expect(await messages().findByText('Отправлено')).toBeInTheDocument()
       expect(screen.getByRole('heading', { level: 2, name: '+7 999 123-45-67' })).toBeInTheDocument()
     })
+  })
+
+  it('shows that another tab receives messages and takes over when it closes', async () => {
+    const locks = new FakeLockManager()
+    Object.defineProperty(navigator, 'locks', { value: locks, configurable: true })
+    try {
+      const otherTab = new AbortController()
+      const lockName = receiveLockName(credentials.idInstance)
+      void locks.request(lockName, {}, () => new Promise<void>((r) => otherTab.signal.addEventListener('abort', () => r())))
+
+      const { api } = setup()
+      expect(await screen.findByText(/Сообщения получает другая вкладка/)).toBeInTheDocument()
+      expect(api.receiveNotification).not.toHaveBeenCalled()
+
+      otherTab.abort()
+      await waitFor(() => expect(api.receiveNotification).toHaveBeenCalled())
+      expect(screen.queryByText(/другая вкладка/)).not.toBeInTheDocument()
+    } finally {
+      Reflect.deleteProperty(navigator, 'locks')
+    }
   })
 
   it('logs out', async () => {

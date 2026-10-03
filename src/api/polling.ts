@@ -5,6 +5,8 @@ import { parseNotification, type NotificationEvent } from './notifications'
 export type PollingClient = Pick<GreenApiClient, 'receiveNotification' | 'deleteNotification'>
 
 export type PollingStatus =
+  /** Очередь опрашивает другая вкладка (см. lib/instanceLock.ts). */
+  | { state: 'standby' }
   | { state: 'connecting' }
   | { state: 'listening' }
   | { state: 'retrying'; error: string; retryInMs: number }
