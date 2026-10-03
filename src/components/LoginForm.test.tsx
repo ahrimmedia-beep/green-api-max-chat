@@ -83,6 +83,24 @@ describe('LoginForm', () => {
     expect(submit).toHaveTextContent('Войти')
   })
 
+  it('shows the demo action only when demo mode is available', async () => {
+    setup()
+    expect(screen.queryByRole('button', { name: 'Попробовать без аккаунта' })).not.toBeInTheDocument()
+  })
+
+  it('starts demo mode without validating the fields', async () => {
+    const user = userEvent.setup()
+    const onLogin = vi.fn<OnLogin>()
+    const onDemo = vi.fn(() => Promise.resolve())
+    render(<LoginForm onLogin={onLogin} onDemo={onDemo} />)
+
+    await user.click(screen.getByRole('button', { name: 'Попробовать без аккаунта' }))
+
+    expect(onDemo).toHaveBeenCalledTimes(1)
+    expect(onLogin).not.toHaveBeenCalled()
+    expect(screen.queryByText('Введите idInstance')).not.toBeInTheDocument()
+  })
+
   it('disables the form while checking', async () => {
     let resolve: () => void = () => {}
     const onLogin = vi.fn<OnLogin>(() => new Promise<void>((r) => (resolve = r)))

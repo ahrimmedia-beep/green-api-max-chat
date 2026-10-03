@@ -15,10 +15,12 @@ import { NewChatForm } from './NewChatForm'
 interface ChatScreenProps {
   credentials: Credentials
   client: GreenApiClient
+  /** Демо-режим: показывается метка, нет блокировки вкладки (у каждой вкладки своя имитация). */
+  demo?: boolean
   onLogout: () => void
 }
 
-export function ChatScreen({ credentials, client, onLogout }: ChatScreenProps) {
+export function ChatScreen({ credentials, client, demo = false, onLogout }: ChatScreenProps) {
   const [state, dispatch] = useReducer(chatReducer, initialChatState)
   const localIdCounter = useRef(0)
 
@@ -28,7 +30,7 @@ export function ChatScreen({ credentials, client, onLogout }: ChatScreenProps) {
   }, [])
 
   const pollingStatus = useNotificationPolling(client, handleNotification, {
-    lockName: receiveLockName(credentials.idInstance),
+    lockName: demo ? null : receiveLockName(credentials.idInstance),
   })
 
   const handleContactInfo = useCallback((chatId: string, info: ContactInfo) => {
@@ -72,7 +74,14 @@ export function ChatScreen({ credentials, client, onLogout }: ChatScreenProps) {
     <div className={`layout${activeChat ? ' layout--chat-open' : ''}`}>
       <aside className="sidebar">
         <header className="sidebar__header">
-          <h1 className="sidebar__title">Чаты</h1>
+          <div className="sidebar__heading">
+            <h1 className="sidebar__title">Чаты</h1>
+            {demo && (
+              <span className="demo-badge" title="Собеседник и ответы имитируются в браузере, запросов к GREEN-API нет">
+                Демо-режим
+              </span>
+            )}
+          </div>
           <button className="icon-button" type="button" onClick={onLogout} aria-label="Выйти" title="Выйти">
             <LogoutIcon />
           </button>
@@ -87,7 +96,7 @@ export function ChatScreen({ credentials, client, onLogout }: ChatScreenProps) {
         </nav>
         <footer className="sidebar__footer">
           <ConnectionStatus status={pollingStatus} />
-          <p className="sidebar__instance">Инстанс {credentials.idInstance}</p>
+          <p className="sidebar__instance">{demo ? 'Демо-инстанс, сообщения не уходят в MAX' : `Инстанс ${credentials.idInstance}`}</p>
         </footer>
       </aside>
 

@@ -4,6 +4,8 @@ import { isValidApiUrl, normalizeApiUrl, suggestApiUrl, type Credentials } from 
 interface LoginFormProps {
   /** Проверяет данные и выполняет вход; при ошибке отклоняется с Error, текст которого показывается пользователю. */
   onLogin: (credentials: Credentials, remember: boolean) => Promise<void>
+  /** Запуск демо-режима без аккаунта. Кнопка показывается, только если передан обработчик. */
+  onDemo?: () => Promise<void>
 }
 
 type FieldErrors = Partial<Record<keyof Credentials, string>>
@@ -18,7 +20,7 @@ function validate(values: Credentials): FieldErrors {
   return errors
 }
 
-export function LoginForm({ onLogin }: LoginFormProps) {
+export function LoginForm({ onLogin, onDemo }: LoginFormProps) {
   const id = useId()
   const [idInstance, setIdInstance] = useState('')
   const [apiTokenInstance, setApiTokenInstance] = useState('')
@@ -52,6 +54,18 @@ export function LoginForm({ onLogin }: LoginFormProps) {
       await onLogin(values, remember)
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : 'Не удалось войти')
+      setBusy(false)
+    }
+  }
+
+  const handleDemo = async () => {
+    if (!onDemo) return
+    setSubmitError(null)
+    setBusy(true)
+    try {
+      await onDemo()
+    } catch {
+      setSubmitError('Не удалось запустить демо-режим. Обновите страницу и попробуйте снова.')
       setBusy(false)
     }
   }
@@ -160,6 +174,18 @@ export function LoginForm({ onLogin }: LoginFormProps) {
         <button className="button button--primary login__submit" type="submit" disabled={busy}>
           {busy ? 'Проверяем…' : 'Войти'}
         </button>
+
+        {onDemo && (
+          <div className="login__demo">
+            <span className="login__divider">или</span>
+            <button className="button button--secondary" type="button" onClick={handleDemo} disabled={busy}>
+              Попробовать без аккаунта
+            </button>
+            <p className="login__demo-note">
+              Демо-режим: собеседник и ответы имитируются в браузере, запросов к GREEN-API нет.
+            </p>
+          </div>
+        )}
       </form>
     </div>
   )
