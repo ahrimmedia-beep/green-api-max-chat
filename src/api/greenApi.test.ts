@@ -261,6 +261,19 @@ describe('describeError', () => {
   it('handles unknown values', () => {
     expect(describeError(new Error('x'))).toMatch(/Неизвестная ошибка/)
   })
+
+  it.each([
+    [new GreenApiError('http', 429, 'Too Many Requests'), 'Слишком много запросов. Подождите немного.'],
+    [new GreenApiError('http', 400, 'instance is starting or not authorized'), /не авторизован/],
+    [new GreenApiError('http', 403, 'Your account is suspended'), 'Доступ запрещён. Проверьте idInstance и API URL.'],
+    [new GreenApiError('http', 466, 'Your account is suspended'), 'На аккаунте MAX временные ограничения на отправку.'],
+    [new GreenApiError('http', 502, ''), 'Ошибка GREEN-API (502)'],
+    [new GreenApiError('response', 200, 'User get contact info limit reached'), /лимит проверок/],
+    [new GreenApiError('response', 200, 'something odd'), 'Неожиданный ответ GREEN-API: something odd'],
+  ])('describes %s', (error, expected) => {
+    if (typeof expected === 'string') expect(describeError(error)).toBe(expected)
+    else expect(describeError(error)).toMatch(expected)
+  })
 })
 
 describe('describeInstanceState', () => {
