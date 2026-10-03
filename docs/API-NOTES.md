@@ -12,8 +12,8 @@
 - `apiUrl` выдаётся для каждого инстанса в личном кабинете вместе с `idInstance` и `apiTokenInstance`
   ([Перед началом работы](https://green-api.com/v3/docs/before-start/#parameters)).
   Пример из документации: `https://3100.api.green-api.com`. Поэтому в форме входа есть поле «API URL».
-  Приложение подставляет его по первым четырём цифрам `idInstance` (`3100…` → `https://3100.api.green-api.com`):
-  так выглядят адреса в консоли, но это соглашение, а не правило из документации. Значение из консоли надёжнее.
+  Приложение подставляет его по первым четырём цифрам `idInstance` (`3100…` → `https://3100.api.green-api.com`).
+  В документации такого правила нет, но на живом инстансе оно подтвердилось (см. ниже). Поле можно поправить вручную.
 - Заголовок `Content-Type: application/json`.
 - CORS: `api.green-api.com` и `3100.api.green-api.com` отвечают `Access-Control-Allow-Origin: *`,
   разрешены методы `GET, POST, OPTIONS, DELETE` и заголовок `Content-Type`. Браузер обращается к API напрямую,
@@ -127,10 +127,25 @@ GetStateInstance 1, SendMessage 50, ReceiveNotification 100, DeleteNotification 
 поля `chatId`, `idMessage`, `status` (`delivered`, `read`, `failed`, `noAccount`, `notInGroup`), `description`.
 Документация требует обязательно обрабатывать `failed` и `noAccount`: приложение помечает такое сообщение ошибкой.
 
-## Что проверить на живом аккаунте
+## Проверено на живом инстансе (03.10.2026)
 
-- Формат `apiUrl` в консоли для MAX-инстанса (с `/v3` на конце или без) и совпадение с подстановкой по `idInstance`.
+Реальные идентификаторы и номера ниже скрыты.
+
+- `idInstance` у MAX-инстанса из 12 цифр (`3100xxxxxxxx`), а не из 10, как в примерах документации.
+  `apiUrl` для него: `https://3100.api.green-api.com`, то есть подстановка по первым четырём цифрам верна.
+- `GetStateInstance` после входа по QR-коду: `{"stateInstance":"authorized"}`.
+- `ReceiveNotification` при пустой очереди: HTTP 200, тело буквально `null`. Клиент возвращает `null`.
+- `DeleteNotification`: `{"result":true,"reason":""}`.
+- `instanceData` в уведомлениях: `{"idInstance":3100xxxxxxxx,"wid":"7xxxxxxxxxx@c.us","typeInstance":"v3"}`.
+  Тип мессенджера `v3`, а не `max`; приложение `typeInstance` не проверяет.
+- Первое уведомление после входа по QR-коду: `typeWebhook: "stateInstanceChanged"` с `stateInstance: "authorized"`.
+  Приложение его пропускает и удаляет из очереди, как и прочие неподдерживаемые типы.
+- `outgoingMessageStatus` приходит с `chatId` в виде числовой строки (например, `"100000001"`) и `status: "delivered"`,
+  в том числе для сообщений, отправленных с телефона в другие чаты. Статусы с незнакомым `idMessage` приложение
+  молча игнорирует (редьюсер возвращает то же состояние).
+
+## Что ещё проверить на живом аккаунте
+
 - Что `senderData.chatId` во входящем сообщении совпадает с `chatId` из `CheckAccount` для того же номера.
-- Как MAX-инстанс отвечает `ReceiveNotification` при пустой очереди: ожидается `null` с кодом 200.
 - Что `GetContactInfo` работает на тарифе «Разработчик» и не расходует лимит проверок номеров,
   а ссылка на аватар открывается в браузере с чужого домена.

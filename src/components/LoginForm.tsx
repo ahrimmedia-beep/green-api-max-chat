@@ -110,7 +110,7 @@ export function LoginForm({ onLogin, onDemo }: LoginFormProps) {
             className="field__input"
             inputMode="numeric"
             autoComplete="off"
-            placeholder="3100123456"
+            placeholder="310012345678"
             value={idInstance}
             onChange={(e) => handleIdChange(e.target.value)}
             disabled={busy}

@@ -170,6 +170,12 @@ describe('createGreenApiClient', () => {
     expect(lastCall(fetch).url).toMatch(/receiveTimeout=60$/)
   })
 
+  it('receiveNotification returns null for the literal "null" body of an empty queue (seen on a live instance)', async () => {
+    const fetch = mockFetch(new Response('null', { status: 200, headers: { 'Content-Type': 'application/json' } }))
+    const client = createGreenApiClient(credentials, { fetch })
+    await expect(client.receiveNotification(5)).resolves.toBeNull()
+  })
+
   it('receiveNotification returns null for an empty queue (null or empty body)', async () => {
     const fetch = mockFetch(jsonResponse(null), new Response('', { status: 200 }))
     const client = createGreenApiClient(credentials, { fetch })

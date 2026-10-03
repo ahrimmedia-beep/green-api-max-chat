@@ -152,6 +152,16 @@ describe('chatReducer', () => {
       const state = reduce([open('10000000')])
       expect(chatReducer(state, status('unknown', 'read'))).toBe(state)
     })
+
+    it('ignores statuses for messages sent from the phone to other chats', () => {
+      // Живой инстанс присылает delivered и для сообщений, отправленных с телефона, с chatId вида "100000001".
+      const state = reduce([open('10000000'), queue('local-1')])
+      const event: ChatAction = {
+        type: 'statusReceived',
+        event: { type: 'outgoingStatus', chatId: '100000001', idMessage: '3EB0C431C26A1D9C', status: 'delivered', description: '' },
+      }
+      expect(chatReducer(state, event)).toBe(state)
+    })
   })
 
   describe('incoming messages', () => {
