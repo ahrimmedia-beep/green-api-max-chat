@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { App } from './App'
 import { GreenApiError, type Credentials } from './api/greenApi'
 import { createDemoSession } from './demo/demoServer'
+import { createChatStorage } from './lib/chatStorage'
 import { createCredentialsStorage } from './lib/credentialsStorage'
 import { FakeGreenApi } from './test/fakeGreenApi'
 
@@ -139,6 +140,47 @@ describe('App', () => {
     await login(user)
     await screen.findByRole('heading', { name: 'Чаты' })
     expect(screen.queryByText('Демо-режим')).not.toBeInTheDocument()
+  })
+
+  describe('history', () => {
+    it('restores chats after a reload and clears them on logout', async () => {
+      const storage = createCredentialsStorage()
+      const chatStorage = createChatStorage()
+      const api = new FakeGreenApi()
+      api.checkAccount.mockResolvedValue({ exist: true, chatId: '10000000' })
+      const user = userEvent.setup()
+      const first = render(<App createClient={() => api} storage={storage} chatStorage={chatStorage} />)
+      await login(user, { remember: true })
+      await user.type(await screen.findByLabelText('Номер телефона получателя'), '+79991234567')
+      await user.click(screen.getByRole('button', { name: 'Создать чат' }))
+      await user.type(await screen.findByLabelText('Сообщение'), 'Сохрани меня{Enter}')
+      await screen.findByText('Отправлено')
+      first.unmount()
+
+      // «Перезагрузка страницы»: новый экземпляр приложения с теми же хранилищами.
+      render(<App createClient={() => new FakeGreenApi()} storage={storage} chatStorage={chatStorage} />)
+      expect(within(screen.getByRole('log', { name: 'Сообщения' })).getByText('Сохрани меня')).toBeInTheDocument()
+
+      await user.click(screen.getByRole('button', { name: 'Выйти' }))
+      expect(chatStorage.load(credentials.idInstance)).toBeNull()
+    })
+
+    it('does not persist demo chats', async () => {
+      const chatStorage = createChatStorage()
+      const user = userEvent.setup()
+      render(
+        <App
+          chatStorage={chatStorage}
+          createDemoSession={async () => createDemoSession({ replyDelayMs: () => 50, deliveredDelayMs: 10, maxWaitMs: 100 })}
+        />,
+      )
+      await user.click(screen.getByRole('button', { name: 'Попробовать без аккаунта' }))
+      await user.type(await screen.findByLabelText('Номер телефона получателя'), '+79991234567')
+      await user.click(screen.getByRole('button', { name: 'Создать чат' }))
+      await screen.findByLabelText('Сообщение')
+
+      expect(window.localStorage.length).toBe(0)
+    })
   })
 
   it('stops polling after logout', async () => {

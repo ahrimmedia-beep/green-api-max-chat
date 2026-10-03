@@ -3,6 +3,7 @@ import { verifyInstance } from './api/auth'
 import { createGreenApiClient, type Credentials, type GreenApiClient } from './api/greenApi'
 import { ChatScreen } from './components/ChatScreen'
 import { LoginForm } from './components/LoginForm'
+import { chatStorage as defaultChatStorage, type ChatStorage } from './lib/chatStorage'
 import { credentialsStorage as defaultStorage, type CredentialsStorage } from './lib/credentialsStorage'
 
 export type ClientFactory = (credentials: Credentials) => GreenApiClient
@@ -19,6 +20,7 @@ interface AppProps {
   /** Для тестов: подмена клиента GREEN-API, хранилища и демо-сессии. */
   createClient?: ClientFactory
   storage?: CredentialsStorage
+  chatStorage?: ChatStorage
   createDemoSession?: () => Promise<DemoSession>
 }
 
@@ -31,6 +33,7 @@ interface Session {
 export function App({
   createClient = createGreenApiClient,
   storage = defaultStorage,
+  chatStorage = defaultChatStorage,
   createDemoSession = loadDemoSession,
 }: AppProps) {
   // Сохранённые данные уже проверялись при входе; если они устарели, об этом сообщит статус получения.
@@ -53,7 +56,10 @@ export function App({
   }
 
   const logout = () => {
-    if (!session?.demo) storage.clear()
+    if (session && !session.demo) {
+      storage.clear()
+      chatStorage.clear(session.credentials.idInstance)
+    }
     setSession(null)
   }
 
@@ -64,6 +70,7 @@ export function App({
       credentials={session.credentials}
       client={session.client}
       demo={session.demo}
+      storage={session.demo ? null : chatStorage}
       onLogout={logout}
     />
   )

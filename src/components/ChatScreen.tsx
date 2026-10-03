@@ -1,9 +1,10 @@
-import { useCallback, useMemo, useReducer, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react'
 import { describeError } from '../api/errors'
 import type { ContactInfo, Credentials, GreenApiClient } from '../api/greenApi'
 import type { NotificationEvent } from '../api/notifications'
 import { useContactInfo } from '../hooks/useContactInfo'
 import { useNotificationPolling } from '../hooks/useNotificationPolling'
+import type { ChatStorage } from '../lib/chatStorage'
 import { receiveLockName } from '../lib/instanceLock'
 import { chatReducer, findChatByPhone, initialChatState, sortChats } from '../state/chatReducer'
 import { ChatList } from './ChatList'
@@ -17,11 +18,22 @@ interface ChatScreenProps {
   client: GreenApiClient
   /** Демо-режим: показывается метка, нет блокировки вкладки (у каждой вкладки своя имитация). */
   demo?: boolean
+  /** Хранилище истории; null: история живёт только в памяти вкладки. */
+  storage?: ChatStorage | null
   onLogout: () => void
 }
 
-export function ChatScreen({ credentials, client, demo = false, onLogout }: ChatScreenProps) {
-  const [state, dispatch] = useReducer(chatReducer, initialChatState)
+export function ChatScreen({ credentials, client, demo = false, storage = null, onLogout }: ChatScreenProps) {
+  const { idInstance } = credentials
+  const [state, dispatch] = useReducer(
+    chatReducer,
+    null,
+    () => storage?.load(idInstance) ?? initialChatState,
+  )
+
+  useEffect(() => {
+    storage?.save(idInstance, state)
+  }, [storage, idInstance, state])
   const localIdCounter = useRef(0)
 
   const handleNotification = useCallback((event: NotificationEvent) => {
