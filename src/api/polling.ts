@@ -1,5 +1,5 @@
 import { describeError } from './errors'
-import { GreenApiError, type GreenApiClient } from './greenApi'
+import { GreenApiError, MIN_RECEIVE_TIMEOUT, type GreenApiClient } from './greenApi'
 import { parseNotification, type NotificationEvent } from './notifications'
 
 export type PollingClient = Pick<GreenApiClient, 'receiveNotification' | 'deleteNotification'>
@@ -84,7 +84,10 @@ export async function runPollingLoop(options: PollingOptions): Promise<void> {
 
   while (!signal.aborted) {
     try {
-      const notification = await client.receiveNotification(receiveTimeout, signal)
+      // Пока связь не подтверждена (старт, восстановление после ошибки), ждём минимальные 5 с,
+      // чтобы быстро показать статус. Дальше держим длинный запрос.
+      const timeout = current === 'listening' ? receiveTimeout : MIN_RECEIVE_TIMEOUT
+      const notification = await client.receiveNotification(timeout, signal)
       failures = 0
       report({ state: 'listening' })
       if (!notification) continue

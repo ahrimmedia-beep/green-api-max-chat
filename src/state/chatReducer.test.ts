@@ -64,6 +64,16 @@ describe('chatReducer', () => {
       expect(selected.chats.find((c) => c.chatId === '2')?.unread).toBe(0)
     })
 
+    it('remembers the phone of a chat that was created by an incoming message', () => {
+      const state = reduce([
+        { type: 'incomingReceived', event: incoming({ phone: null }) },
+        open('10000000', '79876543210'),
+      ])
+      expect(state.chats).toHaveLength(1)
+      expect(state.chats[0]).toMatchObject({ chatId: '10000000', phone: '79876543210', title: 'Анна', unread: 0 })
+      expect(state.activeChatId).toBe('10000000')
+    })
+
     it('ignores selection of an unknown chat', () => {
       const state = reduce([open('1')])
       expect(chatReducer(state, { type: 'chatSelected', chatId: 'nope' })).toBe(state)
@@ -80,11 +90,11 @@ describe('chatReducer', () => {
     it('adds a pending message, then marks it sent with the server id', () => {
       const queued = reduce([open('10000000'), queue('local-1')])
       expect(queued.chats[0]?.messages).toEqual([
-        { id: 'local-1', direction: 'outgoing', text: 'Текст', timestamp: 2000, status: 'pending' },
+        { id: 'local-1', localId: 'local-1', direction: 'outgoing', text: 'Текст', timestamp: 2000, status: 'pending' },
       ])
 
       const sent = chatReducer(queued, { type: 'messageSent', chatId: '10000000', localId: 'local-1', idMessage: 'srv-1' })
-      expect(sent.chats[0]?.messages[0]).toMatchObject({ id: 'srv-1', status: 'sent' })
+      expect(sent.chats[0]?.messages[0]).toMatchObject({ id: 'srv-1', localId: 'local-1', status: 'sent' })
     })
 
     it('marks a message failed with the error text', () => {

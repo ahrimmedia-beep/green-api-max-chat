@@ -6,6 +6,8 @@ export type MessageStatus = 'pending' | 'sent' | 'delivered' | 'read' | 'failed'
 export interface ChatMessage {
   /** idMessage из GREEN-API или локальный id, пока SendMessage не ответил. */
   id: string
+  /** Локальный id исходящего сообщения: стабильный ключ для React, пока id меняется на idMessage. */
+  localId?: string
   direction: MessageDirection
   text: string
   /** Время в миллисекундах. */

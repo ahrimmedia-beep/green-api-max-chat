@@ -100,9 +100,12 @@ function receiveStatus(state: ChatState, event: OutgoingStatusEvent): ChatState 
 export function chatReducer(state: ChatState, action: ChatAction): ChatState {
   switch (action.type) {
     case 'chatOpened': {
-      const exists = state.chats.some((chat) => chat.chatId === action.chatId)
-      const chats = exists ? state.chats : [...state.chats, createChat(action.chatId, action.phone, action.title, action.now)]
-      return chatReducer({ ...state, chats }, { type: 'chatSelected', chatId: action.chatId })
+      const existing = state.chats.find((chat) => chat.chatId === action.chatId)
+      const withChat = existing
+        ? // Чат уже создан входящим сообщением: запоминаем номер, чтобы находить его по номеру.
+          updateChat(state, action.chatId, (chat) => (chat.phone || !action.phone ? chat : { ...chat, phone: action.phone }))
+        : { ...state, chats: [...state.chats, createChat(action.chatId, action.phone, action.title, action.now)] }
+      return chatReducer(withChat, { type: 'chatSelected', chatId: action.chatId })
     }
 
     case 'chatSelected': {
@@ -119,7 +122,14 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         ...chat,
         messages: [
           ...chat.messages,
-          { id: action.localId, direction: 'outgoing', text: action.text, timestamp: action.timestamp, status: 'pending' },
+          {
+            id: action.localId,
+            localId: action.localId,
+            direction: 'outgoing',
+            text: action.text,
+            timestamp: action.timestamp,
+            status: 'pending',
+          },
         ],
       }))
 

@@ -10,7 +10,7 @@ function setup() {
   const controller = new AbortController()
   const events: NotificationEvent[] = []
   const statuses: PollingStatus[] = []
-  const sleep = vi.fn((_ms: number, _signal: AbortSignal) => Promise.resolve())
+  const sleep = vi.fn<(ms: number, signal: AbortSignal) => Promise<void>>(() => Promise.resolve())
   const run = (overrides: Partial<Parameters<typeof runPollingLoop>[0]> = {}) =>
     runPollingLoop({
       client: api,
@@ -51,14 +51,31 @@ describe('runPollingLoop', () => {
     expect(events.filter((e) => e.type === 'incomingText').map((e) => e.text)).toEqual(['первое', 'второе'])
   })
 
-  it('passes receiveTimeout and the abort signal to the client', async () => {
+  it('confirms the connection with a short request, then keeps a long one', async () => {
     const { api, controller, run } = setup()
+    api.receiveNotification.mockResolvedValueOnce(null)
     const loop = run({ receiveTimeout: 30 })
-    await vi.waitFor(() => expect(api.receiveNotification).toHaveBeenCalled())
+    await vi.waitFor(() => expect(api.receiveNotification).toHaveBeenCalledTimes(2))
     controller.abort()
     await loop
 
-    expect(api.receiveNotification).toHaveBeenCalledWith(30, controller.signal)
+    expect(api.receiveNotification.mock.calls).toEqual([
+      [5, controller.signal],
+      [30, controller.signal],
+    ])
+  })
+
+  it('goes back to short requests after an error until the connection is confirmed', async () => {
+    const { api, controller, run } = setup()
+    api.receiveNotification.mockResolvedValueOnce(null)
+    api.receiveNotification.mockRejectedValueOnce(new GreenApiError('network', 0, 'offline'))
+    api.receiveNotification.mockResolvedValueOnce(null)
+    const loop = run({ receiveTimeout: 30 })
+    await vi.waitFor(() => expect(api.receiveNotification).toHaveBeenCalledTimes(4))
+    controller.abort()
+    await loop
+
+    expect(api.receiveNotification.mock.calls.map(([timeout]) => timeout)).toEqual([5, 30, 5, 30])
   })
 
   it('reports connecting, then listening once', async () => {
