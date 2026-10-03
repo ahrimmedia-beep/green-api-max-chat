@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { GreenApiError } from '../api/greenApi'
@@ -159,6 +159,49 @@ describe('ChatScreen', () => {
       setup(api)
 
       expect(await screen.findByText(/Получение остановлено/)).toHaveTextContent('Неверный apiTokenInstance.')
+    })
+  })
+
+  describe('contact names and avatars', () => {
+    it('shows the name and avatar from GetContactInfo', async () => {
+      const { api, user } = setup()
+      api.checkAccount.mockResolvedValueOnce({ exist: true, chatId: '10000000' })
+      api.getContactInfo.mockResolvedValueOnce({ name: 'Анна', contactName: 'Анна Смирнова', avatar: 'https://i.oneme.ru/a' })
+      await openChat(user, '+79991234567')
+
+      expect(await screen.findByRole('heading', { level: 2, name: 'Анна Смирнова' })).toBeInTheDocument()
+      expect(api.getContactInfo).toHaveBeenCalledWith('10000000', expect.any(AbortSignal))
+      expect(screen.getByText('+7 999 123-45-67')).toBeInTheDocument()
+      expect(document.querySelector('.chat__header img')).toHaveAttribute('src', 'https://i.oneme.ru/a')
+    })
+
+    it('falls back to initials when the avatar fails to load', async () => {
+      const { api, user } = setup()
+      api.getContactInfo.mockResolvedValueOnce({ name: 'Анна Смирнова', contactName: '', avatar: 'https://i.oneme.ru/broken' })
+      await openChat(user, '+79991234567')
+      const image = await waitFor(() => {
+        const img = document.querySelector('.chat__header img')
+        if (!img) throw new Error('no avatar yet')
+        return img
+      })
+
+      fireEvent.error(image)
+
+      expect(document.querySelector('.chat__header img')).toBeNull()
+      expect(document.querySelector('.chat__header .avatar')).toHaveTextContent('АС')
+    })
+
+    it('keeps messaging working when GetContactInfo fails', async () => {
+      const { api, user } = setup()
+      api.checkAccount.mockResolvedValueOnce({ exist: true, chatId: '10000000' })
+      api.getContactInfo.mockRejectedValueOnce(new GreenApiError('http', 500, 'Internal Server Error'))
+      await openChat(user, '+79991234567')
+      await waitFor(() => expect(api.getContactInfo).toHaveBeenCalled())
+
+      await user.type(screen.getByLabelText('Сообщение'), 'Всё равно отправится{Enter}')
+
+      expect(await messages().findByText('Отправлено')).toBeInTheDocument()
+      expect(screen.getByRole('heading', { level: 2, name: '+7 999 123-45-67' })).toBeInTheDocument()
     })
   })
 

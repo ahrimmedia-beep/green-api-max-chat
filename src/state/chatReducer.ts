@@ -3,7 +3,7 @@ import { formatPhone } from '../lib/phone'
 import type { Chat, ChatMessage, ChatState, MessageStatus } from './types'
 
 export type ChatAction =
-  | { type: 'chatOpened'; chatId: string; phone: string | null; title?: string; now: number }
+  | { type: 'chatOpened'; chatId: string; phone: string | null; now: number }
   | { type: 'chatSelected'; chatId: string }
   | { type: 'chatClosed' }
   | { type: 'messageQueued'; chatId: string; localId: string; text: string; timestamp: number }
@@ -11,20 +11,28 @@ export type ChatAction =
   | { type: 'messageFailed'; chatId: string; localId: string; error: string }
   | { type: 'incomingReceived'; event: IncomingTextEvent }
   | { type: 'statusReceived'; event: OutgoingStatusEvent }
+  | { type: 'contactInfoReceived'; chatId: string; name: string; avatarUrl: string }
 
 export const initialChatState: ChatState = { chats: [], activeChatId: null }
 
 const STATUS_RANK: Record<MessageStatus, number> = { pending: 0, sent: 1, delivered: 2, read: 3, failed: -1 }
 
-function createChat(chatId: string, phone: string | null, title: string | undefined, now: number): Chat {
+function createChat(chatId: string, phone: string | null, now: number): Chat {
   return {
     chatId,
-    title: title || (phone ? formatPhone(phone) : chatId),
     phone,
+    contactName: null,
+    senderName: null,
+    avatarUrl: null,
     messages: [],
     unread: 0,
     createdAt: now,
   }
+}
+
+/** Имя чата: контактная книга или профиль MAX, затем имя из уведомления, затем номер, затем chatId. */
+export function chatTitle(chat: Chat): string {
+  return chat.contactName || chat.senderName || (chat.phone ? formatPhone(chat.phone) : chat.chatId)
 }
 
 function updateChat(state: ChatState, chatId: string, update: (chat: Chat) => Chat): ChatState {
@@ -69,10 +77,18 @@ function receiveIncoming(state: ChatState, event: IncomingTextEvent): ChatState 
   const existing = state.chats.find((chat) => chat.chatId === event.chatId)
 
   if (!existing) {
-    const chat = createChat(event.chatId, event.phone, event.chatName, event.timestamp)
+    const chat = createChat(event.chatId, event.phone, event.timestamp)
     return {
       ...state,
-      chats: [...state.chats, { ...chat, messages: [message], unread: state.activeChatId === chat.chatId ? 0 : 1 }],
+      chats: [
+        ...state.chats,
+        {
+          ...chat,
+          senderName: event.senderName || null,
+          messages: [message],
+          unread: state.activeChatId === chat.chatId ? 0 : 1,
+        },
+      ],
     }
   }
   // Повторная доставка того же уведомления (например, DeleteNotification не прошёл) не дублирует сообщение.
@@ -80,7 +96,7 @@ function receiveIncoming(state: ChatState, event: IncomingTextEvent): ChatState 
 
   return updateChat(state, event.chatId, (chat) => ({
     ...chat,
-    title: event.chatName || chat.title,
+    senderName: event.senderName || chat.senderName,
     phone: chat.phone ?? event.phone,
     messages: [...chat.messages, message],
     unread: state.activeChatId === chat.chatId ? 0 : chat.unread + 1,
@@ -104,7 +120,7 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
       const withChat = existing
         ? // Чат уже создан входящим сообщением: запоминаем номер, чтобы находить его по номеру.
           updateChat(state, action.chatId, (chat) => (chat.phone || !action.phone ? chat : { ...chat, phone: action.phone }))
-        : { ...state, chats: [...state.chats, createChat(action.chatId, action.phone, action.title, action.now)] }
+        : { ...state, chats: [...state.chats, createChat(action.chatId, action.phone, action.now)] }
       return chatReducer(withChat, { type: 'chatSelected', chatId: action.chatId })
     }
 
@@ -148,6 +164,15 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
 
     case 'statusReceived':
       return receiveStatus(state, action.event)
+
+    case 'contactInfoReceived':
+      return updateChat(state, action.chatId, (chat) => {
+        const contactName = action.name || chat.contactName
+        const avatarUrl = action.avatarUrl || chat.avatarUrl
+        return contactName === chat.contactName && avatarUrl === chat.avatarUrl
+          ? chat
+          : { ...chat, contactName, avatarUrl }
+      })
   }
 }
 

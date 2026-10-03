@@ -1,7 +1,8 @@
 import { useCallback, useMemo, useReducer, useRef } from 'react'
 import { describeError } from '../api/errors'
-import type { Credentials, GreenApiClient } from '../api/greenApi'
+import type { ContactInfo, Credentials, GreenApiClient } from '../api/greenApi'
 import type { NotificationEvent } from '../api/notifications'
+import { useContactInfo } from '../hooks/useContactInfo'
 import { useNotificationPolling } from '../hooks/useNotificationPolling'
 import { chatReducer, findChatByPhone, initialChatState, sortChats } from '../state/chatReducer'
 import { ChatList } from './ChatList'
@@ -26,6 +27,11 @@ export function ChatScreen({ credentials, client, onLogout }: ChatScreenProps) {
   }, [])
 
   const pollingStatus = useNotificationPolling(client, handleNotification)
+
+  const handleContactInfo = useCallback((chatId: string, info: ContactInfo) => {
+    dispatch({ type: 'contactInfoReceived', chatId, name: info.contactName || info.name, avatarUrl: info.avatar })
+  }, [])
+  useContactInfo(client, state.chats, handleContactInfo)
 
   const chats = useMemo(() => sortChats(state.chats), [state.chats])
   const activeChat = state.chats.find((chat) => chat.chatId === state.activeChatId) ?? null

@@ -7,8 +7,8 @@
 export interface IncomingTextEvent {
   type: 'incomingText'
   chatId: string
-  /** Имя чата из senderData.chatName, может быть пустым. */
-  chatName: string
+  /** Имя собеседника из уведомления (для группы название группы), может быть пустым. */
+  senderName: string
   /** Номер отправителя цифрами; null, если скрыт или это группа. */
   phone: string | null
   idMessage: string
@@ -102,7 +102,10 @@ export function parseNotification(body: unknown, now: () => number = Date.now): 
     return {
       type: 'incomingText',
       chatId: str(sender.chatId),
-      chatName: str(sender.chatName) || str(sender.senderContactName) || str(sender.senderName),
+      senderName:
+        sender.chatType === 'group'
+          ? str(sender.chatName)
+          : str(sender.senderContactName) || str(sender.senderName) || str(sender.chatName),
       phone: sender.chatType === 'group' ? null : phoneFrom(sender.senderPhoneNumber),
       idMessage,
       text,

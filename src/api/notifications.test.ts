@@ -18,7 +18,7 @@ describe('parseNotification', () => {
     expect(parseNotification(incomingText('Привет'))).toEqual({
       type: 'incomingText',
       chatId: '10000000',
-      chatName: 'Ходабрыш Пробешёлов',
+      senderName: 'Ходабрыш Пробешёлов',
       phone: '79876543210',
       idMessage: '126543123451133331119',
       text: 'Привет',
@@ -42,7 +42,7 @@ describe('parseNotification', () => {
     expect(parseNotification(incomingGroupText)).toMatchObject({
       type: 'incomingText',
       chatId: '-69876543210123',
-      chatName: 'Название группы',
+      senderName: 'Название группы',
       phone: null,
     })
   })
@@ -51,7 +51,19 @@ describe('parseNotification', () => {
     const body = incomingText('x', {
       senderData: { chatId: '5', chatName: '', senderName: 'Аня', senderPhoneNumber: 0 },
     })
-    expect(parseNotification(body)).toMatchObject({ chatId: '5', chatName: 'Аня', phone: null })
+    expect(parseNotification(body)).toMatchObject({ chatId: '5', senderName: 'Аня', phone: null })
+  })
+
+  it('prefers the phone book name, then the profile name, then the chat name', () => {
+    const sender = (data: Record<string, unknown>) =>
+      parseNotification(incomingText('x', { senderData: { chatId: '5', chatType: 'user', ...data } }))
+    expect(sender({ senderContactName: 'Мама', senderName: 'Елена', chatName: 'Елена П.' })).toMatchObject({
+      senderName: 'Мама',
+    })
+    expect(sender({ senderContactName: '', senderName: 'Елена', chatName: 'Елена П.' })).toMatchObject({
+      senderName: 'Елена',
+    })
+    expect(sender({ chatName: 'Елена П.' })).toMatchObject({ senderName: 'Елена П.' })
   })
 
   it('falls back to the current time when timestamp is missing', () => {

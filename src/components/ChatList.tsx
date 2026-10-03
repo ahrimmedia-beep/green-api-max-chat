@@ -1,4 +1,5 @@
 import { formatListTime } from '../lib/format'
+import { chatTitle } from '../state/chatReducer'
 import type { Chat } from '../state/types'
 import { Avatar } from './Avatar'
 
@@ -24,6 +25,7 @@ export function ChatList({ chats, activeChatId, onSelect }: ChatListProps) {
       {chats.map((chat) => {
         const last = chat.messages.at(-1)
         const active = chat.chatId === activeChatId
+        const title = chatTitle(chat)
         return (
           <li key={chat.chatId}>
             <button
@@ -32,10 +34,10 @@ export function ChatList({ chats, activeChatId, onSelect }: ChatListProps) {
               onClick={() => onSelect(chat.chatId)}
               aria-current={active ? 'true' : undefined}
             >
-              <Avatar seed={chat.chatId} title={chat.title} />
+              <Avatar seed={chat.chatId} title={title} url={chat.avatarUrl} />
               <span className="chat-item__body">
                 <span className="chat-item__top">
-                  <span className="chat-item__title">{chat.title}</span>
+                  <span className="chat-item__title">{title}</span>
                   {last && <span className="chat-item__time">{formatListTime(last.timestamp)}</span>}
                 </span>
                 <span className="chat-item__bottom">

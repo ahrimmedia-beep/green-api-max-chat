@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { formatPhone } from '../lib/phone'
+import { chatTitle } from '../state/chatReducer'
 import type { Chat } from '../state/types'
 import { Avatar } from './Avatar'
 import { BackIcon } from './icons'
@@ -15,6 +16,7 @@ interface ChatWindowProps {
 
 export function ChatWindow({ chat, onSend, onBack }: ChatWindowProps) {
   const listRef = useRef<HTMLDivElement>(null)
+  const title = chatTitle(chat)
   const phone = chat.phone ? formatPhone(chat.phone) : null
   const lastMessage = chat.messages.at(-1)
 
@@ -25,15 +27,15 @@ export function ChatWindow({ chat, onSend, onBack }: ChatWindowProps) {
   }, [chat.chatId, chat.messages.length, lastMessage?.id])
 
   return (
-    <section className="chat" aria-label={`Чат: ${chat.title}`}>
+    <section className="chat" aria-label={`Чат: ${title}`}>
       <header className="chat__header">
         <button className="icon-button chat__back" type="button" onClick={onBack} aria-label="К списку чатов">
           <BackIcon />
         </button>
-        <Avatar seed={chat.chatId} title={chat.title} size="lg" />
+        <Avatar seed={chat.chatId} title={title} url={chat.avatarUrl} size="lg" />
         <div className="chat__heading">
-          <h2 className="chat__title">{chat.title}</h2>
-          <p className="chat__subtitle">{phone && phone !== chat.title ? phone : 'MAX'}</p>
+          <h2 className="chat__title">{title}</h2>
+          <p className="chat__subtitle">{phone && phone !== title ? phone : 'MAX'}</p>
         </div>
       </header>
 

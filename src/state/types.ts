@@ -20,9 +20,13 @@ export interface ChatMessage {
 export interface Chat {
   /** chatId MAX: число в строке, например "10000000". */
   chatId: string
-  title: string
   /** Номер цифрами, если известен. */
   phone: string | null
+  /** Имя из GetContactInfo (контактная книга или профиль MAX). */
+  contactName: string | null
+  /** Имя из входящих уведомлений. */
+  senderName: string | null
+  avatarUrl: string | null
   messages: ChatMessage[]
   unread: number
   createdAt: number

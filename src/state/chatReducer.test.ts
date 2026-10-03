@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { IncomingTextEvent, OutgoingStatusEvent } from '../api/notifications'
-import { chatReducer, findChatByPhone, initialChatState, sortChats, type ChatAction } from './chatReducer'
+import { chatReducer, chatTitle, findChatByPhone, initialChatState, sortChats, type ChatAction } from './chatReducer'
 import type { ChatState } from './types'
 
 function reduce(actions: ChatAction[], state: ChatState = initialChatState): ChatState {
@@ -18,7 +18,7 @@ function incoming(overrides: Partial<IncomingTextEvent> = {}): IncomingTextEvent
   return {
     type: 'incomingText',
     chatId: '10000000',
-    chatName: 'Анна',
+    senderName: 'Анна',
     phone: '79876543210',
     idMessage: 'in-1',
     text: 'Привет',
@@ -45,8 +45,18 @@ describe('chatReducer', () => {
       const state = reduce([open('10000000', '79991234567')])
       expect(state.activeChatId).toBe('10000000')
       expect(state.chats).toEqual([
-        { chatId: '10000000', title: '+7 999 123-45-67', phone: '79991234567', messages: [], unread: 0, createdAt: 1000 },
+        {
+          chatId: '10000000',
+          phone: '79991234567',
+          contactName: null,
+          senderName: null,
+          avatarUrl: null,
+          messages: [],
+          unread: 0,
+          createdAt: 1000,
+        },
       ])
+      expect(chatTitle(state.chats[0]!)).toBe('+7 999 123-45-67')
     })
 
     it('does not duplicate an existing chat', () => {
@@ -70,7 +80,7 @@ describe('chatReducer', () => {
         open('10000000', '79876543210'),
       ])
       expect(state.chats).toHaveLength(1)
-      expect(state.chats[0]).toMatchObject({ chatId: '10000000', phone: '79876543210', title: 'Анна', unread: 0 })
+      expect(state.chats[0]).toMatchObject({ chatId: '10000000', phone: '79876543210', senderName: 'Анна', unread: 0 })
       expect(state.activeChatId).toBe('10000000')
     })
 
@@ -150,8 +160,10 @@ describe('chatReducer', () => {
       expect(state.chats).toEqual([
         {
           chatId: '10000000',
-          title: 'Анна',
           phone: '79876543210',
+          contactName: null,
+          senderName: 'Анна',
+          avatarUrl: null,
           messages: [{ id: 'in-1', direction: 'incoming', text: 'Привет', timestamp: 5000 }],
           unread: 1,
           createdAt: 5000,
@@ -161,10 +173,10 @@ describe('chatReducer', () => {
     })
 
     it('falls back to the phone, then the chat id, for the title', () => {
-      const byPhone = reduce([{ type: 'incomingReceived', event: incoming({ chatName: '' }) }])
-      expect(byPhone.chats[0]?.title).toBe('+7 987 654-32-10')
-      const byId = reduce([{ type: 'incomingReceived', event: incoming({ chatName: '', phone: null }) }])
-      expect(byId.chats[0]?.title).toBe('10000000')
+      const byPhone = reduce([{ type: 'incomingReceived', event: incoming({ senderName: '' }) }])
+      expect(chatTitle(byPhone.chats[0]!)).toBe('+7 987 654-32-10')
+      const byId = reduce([{ type: 'incomingReceived', event: incoming({ senderName: '', phone: null }) }])
+      expect(chatTitle(byId.chats[0]!)).toBe('10000000')
     })
 
     it('appends to the matching chat and updates its name', () => {
@@ -174,7 +186,7 @@ describe('chatReducer', () => {
         { type: 'incomingReceived', event: incoming() },
       ])
       const chat = state.chats[0]
-      expect(chat?.title).toBe('Анна')
+      expect(chatTitle(chat!)).toBe('Анна')
       expect(chat?.messages.map((m) => m.direction)).toEqual(['outgoing', 'incoming'])
       expect(chat?.unread).toBe(0)
     })
@@ -192,6 +204,34 @@ describe('chatReducer', () => {
       const once = reduce([{ type: 'incomingReceived', event: incoming() }])
       expect(chatReducer(once, { type: 'incomingReceived', event: incoming() })).toBe(once)
     })
+  })
+})
+
+describe('contact info', () => {
+  it('stores the name and avatar and prefers them over the notification name', () => {
+    const state = reduce([
+      { type: 'incomingReceived', event: incoming() },
+      { type: 'contactInfoReceived', chatId: '10000000', name: 'Анна Смирнова', avatarUrl: 'https://i.oneme.ru/a' },
+    ])
+    expect(state.chats[0]).toMatchObject({ contactName: 'Анна Смирнова', avatarUrl: 'https://i.oneme.ru/a' })
+    expect(chatTitle(state.chats[0]!)).toBe('Анна Смирнова')
+
+    // Новое сообщение с другим именем в уведомлении не перебивает имя из контакта.
+    const next = chatReducer(state, { type: 'incomingReceived', event: incoming({ idMessage: 'in-2', senderName: 'Аня' }) })
+    expect(chatTitle(next.chats[0]!)).toBe('Анна Смирнова')
+  })
+
+  it('keeps previous values when the API returns empty strings', () => {
+    const state = reduce([
+      open('1', '79991234567'),
+      { type: 'contactInfoReceived', chatId: '1', name: 'Иван', avatarUrl: 'https://i.oneme.ru/b' },
+    ])
+    expect(chatReducer(state, { type: 'contactInfoReceived', chatId: '1', name: '', avatarUrl: '' })).toBe(state)
+  })
+
+  it('ignores unknown chats', () => {
+    const state = reduce([open('1')])
+    expect(chatReducer(state, { type: 'contactInfoReceived', chatId: '2', name: 'X', avatarUrl: '' })).toBe(state)
   })
 })
 
