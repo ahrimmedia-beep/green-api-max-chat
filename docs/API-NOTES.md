@@ -140,7 +140,7 @@ GetStateInstance 1, SendMessage 50, ReceiveNotification 100, DeleteNotification 
   Тип мессенджера `v3`, а не `max`; приложение `typeInstance` не проверяет.
 - Первое уведомление после входа по QR-коду: `typeWebhook: "stateInstanceChanged"` с `stateInstance: "authorized"`.
   Приложение его пропускает и удаляет из очереди, как и прочие неподдерживаемые типы.
-- `outgoingMessageStatus` приходит с `chatId` в виде числовой строки (например, `"100000001"`) и `status: "delivered"`,
+- `outgoingMessageStatus` приходит с `chatId` в виде числовой строки (9 цифр, например `"105xxxxxx"`) и `status: "delivered"`,
   в том числе для сообщений, отправленных с телефона в другие чаты. Статусы с незнакомым `idMessage` приложение
   молча игнорирует (редьюсер возвращает то же состояние).
 
