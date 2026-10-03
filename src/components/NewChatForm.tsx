@@ -43,7 +43,7 @@ export function NewChatForm({ onCreate }: NewChatFormProps) {
           type="tel"
           inputMode="tel"
           autoComplete="off"
-          placeholder="Номер, например +7 999 123-45-67"
+          placeholder="Номер для нового чата"
           title={PHONE_HINT}
           value={value}
           onChange={(e) => {
