@@ -164,6 +164,42 @@ describe('ChatScreen', () => {
     })
   })
 
+  it('replays the round trip seen on a live instance: delivered status, then a reply in the same chat', async () => {
+    const { api, user } = setup()
+    api.checkAccount.mockResolvedValueOnce({ exist: true, chatId: '57000001' })
+    api.sendMessage.mockResolvedValueOnce({ idMessage: '1791031123778' })
+    await openChat(user, '+79870000001')
+    await user.type(screen.getByLabelText('Сообщение'), 'Проверка{Enter}')
+    await messages().findByText('Отправлено')
+
+    api.push(outgoingStatus('delivered', '1791031123778'))
+    api.push(
+      incomingText('Ок', {
+        idMessage: '1791031999999',
+        senderData: {
+          chatId: '57000001',
+          chatName: 'Тестовый собеседник',
+          chatType: 'user',
+          sender: '57000001',
+          senderName: 'Тестовый собеседник',
+          senderType: 'user',
+          senderContactName: 'Тест из контактов',
+          senderPhoneNumber: 79870000001,
+        },
+        messageData: {
+          typeMessage: 'textMessage',
+          textMessageData: { textMessage: 'Ок', forwardingScore: 0, isForwarded: false },
+        },
+      }),
+    )
+
+    expect(await messages().findByText('Ок')).toBeInTheDocument()
+    expect(messages().getByText('Доставлено')).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /Тест из контактов/ })).toHaveLength(1)
+    expect(screen.getByRole('heading', { level: 2, name: 'Тест из контактов' })).toBeInTheDocument()
+    expect(screen.getByText('+7 987 000-00-01')).toBeInTheDocument()
+  })
+
   describe('contact names and avatars', () => {
     it('shows the name and avatar from GetContactInfo', async () => {
       const { api, user } = setup()

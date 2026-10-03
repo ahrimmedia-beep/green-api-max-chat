@@ -144,8 +144,25 @@ GetStateInstance 1, SendMessage 50, ReceiveNotification 100, DeleteNotification 
   в том числе для сообщений, отправленных с телефона в другие чаты. Статусы с незнакомым `idMessage` приложение
   молча игнорирует (редьюсер возвращает то же состояние).
 
+Полный цикл отправки и ответа (номер и chatId скрыты):
+
+1. `CheckAccount` `{"phoneNumber":7987xxxxxxx}` → `{"exist":true,"chatId":"57xxxxxx","fromCache":true}`.
+   Поле `fromCache` в ответе есть; клиент лишние поля игнорирует.
+2. `SendMessage` `{"chatId":"57xxxxxx","message":"..."}` → `{"idMessage":"1791031123778"}`.
+3. `outgoingMessageStatus` с тем же `chatId` и `status: "delivered"`.
+4. `incomingMessageReceived` с `senderData.chatId` и `senderData.sender`, равными `chatId` из `CheckAccount`,
+   `chatType: "user"`, полями `chatName`, `senderName`, `senderContactName`, `senderPhoneNumber` и
+   `messageData: {"typeMessage":"textMessage","textMessageData":{"textMessage":"Ок","forwardingScore":0,"isForwarded":false}}`.
+
+Выводы для приложения:
+
+- Ответ приходит с тем же `chatId`, что вернул `CheckAccount`, поэтому попадает в нужный чат.
+- Имя собеседника: `senderContactName` (из контактной книги), затем `senderName`, затем `chatName`, затем номер.
+  Номер для подписи берётся из `senderPhoneNumber`.
+- Статус `read` в течение минуты после ответа не пришёл. Отметка «прочитано» необязательна: сообщение остаётся
+  «доставлено», если статуса нет.
+
 ## Что ещё проверить на живом аккаунте
 
-- Что `senderData.chatId` во входящем сообщении совпадает с `chatId` из `CheckAccount` для того же номера.
 - Что `GetContactInfo` работает на тарифе «Разработчик» и не расходует лимит проверок номеров,
   а ссылка на аватар открывается в браузере с чужого домена.
