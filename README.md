@@ -1,5 +1,3 @@
-<!-- GIF с демонстрацией: положить файл в docs/screenshots/demo.gif и раскомментировать строку ниже. -->
-<!-- ![Демонстрация работы чата](docs/screenshots/demo.gif) -->
 
 # MAX Chat на GREEN-API
 
@@ -14,6 +12,10 @@ React 19, TypeScript, Vite. Внешний вид по мотивам [web.max.r
 
 Сервис в интернете: https://ahrimmedia-beep.github.io/green-api-max-chat/
 Без аккаунта GREEN-API можно нажать «Попробовать без аккаунта» на экране входа.
+
+![Отправка и ответ на живом инстансе MAX](docs/screenshots/demo.gif)
+
+*Запись на живом инстансе MAX: сообщение уходит, получатель отвечает с телефона, ответ и отметка «прочитано» появляются в чате. Номер и имя получателя размыты.*
 
 ## Что умеет
 
@@ -38,11 +40,11 @@ React 19, TypeScript, Vite. Внешний вид по мотивам [web.max.r
 
 ## Скриншоты
 
-<!-- Файлы login.png, chat.png и mobile.png положить в docs/screenshots/ -->
+| Вход | Чат | Тёмная тема | Телефон |
+|---|---|---|---|
+| ![Вход](docs/screenshots/login.png) | ![Чат](docs/screenshots/chat.png) | ![Тёмная тема](docs/screenshots/dark.png) | ![Телефон](docs/screenshots/mobile.png) |
 
-| Вход | Чат | Телефон |
-|---|---|---|
-| ![Вход](docs/screenshots/login.png) | ![Чат](docs/screenshots/chat.png) | ![Телефон](docs/screenshots/mobile.png) |
+Скриншоты чата сняты в демо-режиме.
 
 ## Подготовка аккаунта GREEN-API
 
